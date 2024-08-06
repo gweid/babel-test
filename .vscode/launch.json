@@ -11,7 +11,7 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
-      "program": "${workspaceFolder}/demo-01/index-3.js",
+      "program": "${workspaceFolder}/test.js",
       "console": "integratedTerminal"
     }
   ]
