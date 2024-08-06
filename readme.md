@@ -710,7 +710,91 @@ sourcemap 通过 `names` 和 `;` 的设计省略掉了一些变量名和行数�
 
 
 
+#### source-map 包
+
 babel 具体生成 sourcemap 的过程是用 mozilla 维护的 [source-map](https://link.juejin.cn/?target=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2Fsource-map) 这个包，其他工具做 sourcemap 的解析和生成也是基于这个包。
+
+
+
+source-map 暴露了 SourceMapConsumer、SourceMapGenerator、SourceNode 3个类，分别用于消费 sourcemap、生成 sourcemap、创建源码节点。
+
+
+
+##### 生成 sourcemap
+
+生成 sourcemap 的流程是：
+
+1. 创建一个 SourceMapGenerator 对象
+2. 通过 addMapping 方法添加一个映射
+3. 通过 toString 转为 sourcemap 字符串
+
+```js
+var map = new SourceMapGenerator({
+  file: "source-mapped.js"
+});
+
+map.addMapping({
+  generated: {
+    line: 10,
+    column: 35
+  },
+  source: "foo.js",
+  original: {
+    line: 33,
+    column: 2
+  },
+  name: "christopher"
+});
+
+console.log(map.toString());
+// '{"version":3,"file":"source-mapped.js",
+//   "sources":["foo.js"],"names":["christopher"],"mappings":";;;;;;;;;mCAgCEA"}'
+
+```
+
+
+
+##### 消费 sourcemap
+
+SourceMapConsumer.with 的回调里面可以拿到 consumer 的 api，调用 originalPositionFor 和 generatedPositionFor 可以分别用目标代码位置查源码位置和用源码位置查目标代码位置。还可以通过 eachMapping 遍历所有 mapping，对每个进行处理。
+
+```js
+const rawSourceMap = {
+  version: 3,
+  file: "min.js",
+  names: ["bar", "baz", "n"],
+  sources: ["one.js", "two.js"],
+  sourceRoot: "http://example.com/www/js/",
+  mappings: "CAAC,IAAI,IAAM,SAAUA,GAClB,OAAOC,IAAID;CCDb,IAAI,IAAM,SAAUE,GAClB,OAAOA"
+};
+
+const whatever = await SourceMapConsumer.with(rawSourceMap, null, consumer => {
+   // 目标代码位置查询源码位置
+  consumer.originalPositionFor({
+    line: 2,
+    column: 28
+  })
+  // { source: 'http://example.com/www/js/two.js',
+  //   line: 2,
+  //   column: 10,
+  //   name: 'n' }
+  
+  // 源码位置查询目标代码位置
+  consumer.generatedPositionFor({
+    source: "http://example.com/www/js/two.js",
+    line: 2,
+    column: 10
+  })
+  // { line: 2, column: 28 }
+  
+  // 遍历 mapping
+  consumer.eachMapping(function(m) {
+    // ...
+  });
+
+  return computeWhatever();
+});
+```
 
 
 
