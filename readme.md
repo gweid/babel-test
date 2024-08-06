@@ -798,3 +798,131 @@ const whatever = await SourceMapConsumer.with(rawSourceMap, null, consumer => {
 
 
 
+## babel 的 plugin 和 preset
+
+
+
+### plugin
+
+babel 的 plugin 是在配置文件里面通过 plugins 选项配置，值为字符串或者数组。如果需要传参就用数组格式，第二个元素为参数：
+
+```js
+{
+  "plugins": ["pluginA", ["pluginB"], ["pluginC", {/* options */}]]
+}
+```
+
+
+
+#### plugin 的格式
+
+babel plugin 支持两种格式
+
+
+
+#### 对象格式
+
+直接写一个对象，这种方式适合不需要传参及处理参数的情况
+
+```js
+export default plugin =  {
+  pre(state) {
+    this.cache = new Map();
+  },
+  visitor: {
+    StringLiteral(path, state) {
+      this.cache.set(path.node.value, 1);
+    }
+  },
+  post(state) {
+    console.log(this.cache);
+  }
+};
+```
+
+对象有 inherits、manipulateOptions、pre、visitor、post 等属性。
+
+- inherits 指定继承某个插件，和当前插件的 options 合并，通过 Object.assign 的方式。
+- visitor 指定 traverse 时调用的函数。
+- pre 和 post 分别在遍历前后调用，可以做一些插件调用前后的逻辑，比如可以往 file（表示文件的对象，在插件里面通过 state.file 拿到）中放一些东西，在遍历的过程中取出来。
+- manipulateOptions 用于修改 options，是在插件里面修改配置的方式，比如 syntaxt plugin一般都会修改 parser options：
+
+
+
+#### 函数格式
+
+这个格式，可以接受参数，返回一个对象
+
+```js
+export default function(api, options, dirname) {
+  return {
+    inherits: parentPlugin,
+    manipulateOptions(options, parserOptions) {
+        options.xxx = '';
+    },
+    pre(file) {
+      this.cache = new Map();
+    },
+    visitor: {
+      StringLiteral(path, state) {
+        this.cache.set(path.node.value, 1);
+      }
+    },
+    post(file) {
+      console.log(this.cache);
+    }
+  };
+} 
+```
+
+插件函数有 3 个参数，api、options、dirname。
+
+- api 里包含了各种 babel 的 api，比如 types、template 等，这些包就不用在插件里单独单独引入了，直接取来用就行。
+- options 就是外面传入的参数
+- dirname 是目录名（不常用）
+
+返回的对象，与上面对象格式一致。
+
+
+
+### preset
+
+plugin 是单个转换功能的实现，当 plugin 比较多或者 plugin 的 options 比较多的时候就会导致使用成本升高。这时候可以封装成一个 preset，用户可以通过 preset 来批量引入 plugin 并进行一些配置。preset 就是对 babel 配置的一层封装。
+
+有了 preset 之后就不再需要知道用到了什么插件，只需要选择合适的 preset，然后配置一下，就会引入需要的插件，这就是 preset 的意义。
+
+
+
+#### preset 格式
+
+preset 格式和 plugin 一样，也是可以是一个对象，或者是一个函数，函数的参数也是一样的 api 和 options，区别只是 preset 返回的是配置对象，包含 plugins、presets 等配置。
+
+```js
+export default function(api, options) {
+  return {
+    plugins: ['pluginA'],
+    presets: [['presetsB', { options: 'bbb'}]]
+  }
+}
+```
+
+或者
+
+```js
+export default obj = {
+  plugins: ['pluginA'],
+  presets: [['presetsB', { options: 'bbb'}]]
+}
+```
+
+
+
+### 执行顺序
+
+preset 和 plugin 从形式上差不多，但是应用顺序不同。babel 会按照如下顺序处理 plugin 和 preset：
+
+1. 先应用 plugin，再应用 preset
+2. plugin 从前到后，preset 从后到前
+
+这个顺序是 babel 的规定。
+
