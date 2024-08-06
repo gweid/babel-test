@@ -610,3 +610,107 @@ state {
 
 可以在遍历的过程中在 state 中存一些状态信息，用于后续的 AST 处理。
 
+
+
+## generator 和 sourcemap
+
+AST 转换完之后就到了 generate 阶段，这个阶段负责将 ast 重新转换为代码，并生成 sourcemap 映射关系
+
+
+
+### generate
+
+generate 是把 ast 打印成字符串，是一个从根节点递归打印的过程，对不同的 ast 节点做不同的处理，在这个过程中把抽象语法树中省略掉的一些分隔符重新加回来。
+
+比如 while 循环语句，WhileStatement 就是先打印 while，然后打印一个空格和 '('，然后打印 node.test 属性的节点，然后打印 ')'，之后打印 block 部分
+
+[源码位置](https://github.com/babel/babel/blob/main/packages/babel-generator/src/generators/statements.ts#L96)
+
+![](./imgs/img5.png)
+
+通过这样的方式递归打印整个 AST，就可以生成目标代码。@babel/generator 的 [src/generators](https://link.juejin.cn/?target=https%3A%2F%2Fgithub.com%2Fbabel%2Fbabel%2Ftree%2Fmain%2Fpackages%2Fbabel-generator%2Fsrc%2Fgenerators) 下定义了每一种AST节点的打印方式
+
+
+
+### sourcemap
+
+babel 对源码进行了修改，生成的目标代码可能改动很大，如果直接调试目标代码，那么可能很难对应到源码里。所以需要一种自动关联源码的方式，就是 sourcemap。
+
+
+
+#### sourcemap 的应用
+
+平时用 sourcemap 主要用两个目的：
+
+
+
+**1、调试代码时定位到源码**
+
+chrome、firefox 等浏览器支持在文件末尾加上[一行注释](https://link.juejin.cn/?target=https%3A%2F%2Fdeveloper.mozilla.org%2Fzh-CN%2Fdocs%2FTools%2FDebugger%2FHow_to%2FUse_a_source_map)
+
+```js
+//# sourceMappingURL=http://example.com/path/to/your/sourcemap.map
+```
+
+可以通过 url 的方式或者转成 base64 内联的方式来关联 sourcemap。调试工具（浏览器、vscode 等会自动解析 sourcemap，关联到源码。这样打断点、错误堆栈等都会对应到相应源码。
+
+
+
+**2、线上报错定位到源码**
+
+开发时会使用 sourcemap 来调试，但是生产不会， 不能将 sourcemap 上传到生产。但是线上报错的时候确实也需要定位到源码，这种情况一般都是单独上传 sourcemap 到错误收集平台。
+
+比如 sentry 就提供了一个 [@sentry/webpack-plugin](https://link.juejin.cn/?target=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F@sentry%2Fwebpack-plugin) 支持在打包完成后把 sourcemap 自动上传到 sentry 后台，然后把本地 sourcemap 删掉。还提供了 [@sentry/cli](https://link.juejin.cn/?target=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2F@sentry%2Fcli) 让用户可以手动上传。
+
+
+
+#### sourcemap 的格式
+
+```js
+{
+  version: 3,
+  file: 'min.js',
+  sourceRoot: 'http://example.com/www/js/',
+  sources: ['one.js', 'two.js'],
+  names: ['bar', 'baz', 'n'],
+  mappings: 'CAAC,GAClB,OAAOC;SAAUE,GAClB,OAAOA'
+}
+```
+
+这就是 sourcemap 的基本格式，对应字段的含义如下：
+
+- version：source map的版本，目前为3。
+- file：转换后的文件名。
+- sourceRoot：转换前的文件所在的目录。如果与转换前的文件在同一目录，该项为空。
+- sources：转换前的文件。该项是一个数组，因为可能是多个源文件合并成一个目标文件。
+- names：转换前的所有变量名和属性名，把所有变量名提取出来，下面的 mapping 直接使用下标引用，可以减少体积。
+- mappings：转换前代码和转换后代码的映射关系的集合，用分号代表一行，每行的 mapping 用逗号分隔。
+
+
+
+一个 mappings 类似
+
+```js
+mappings:"AAAAA,BBBBB;;;;CCCCC,DDDDD"
+```
+
+每一个分号 `;` 表示一行，多个空行就是多个 `;`，mapping 通过 `,` 分割。
+
+
+
+每一组 mappings 有 5 位，每一位是通过 VLQ 编码的，一个字符就能表示行列数
+
+>  第一位是目标代码中的列数
+>  第二位是源码所在的文件名
+>  第三位是源码对应的行数
+>  第四位是源码对应的列数
+>  第五位是源码对应的 names，不一定有
+
+sourcemap 通过 `names` 和 `;` 的设计省略掉了一些变量名和行数所占的空间，又通过 VLQ 编码使得一个字符就可以表示行列数等信息。通过不大的空间占用完成了源码到目标代码的映射。
+
+
+
+babel 具体生成 sourcemap 的过程是用 mozilla 维护的 [source-map](https://link.juejin.cn/?target=https%3A%2F%2Fwww.npmjs.com%2Fpackage%2Fsource-map) 这个包，其他工具做 sourcemap 的解析和生成也是基于这个包。
+
+
+
