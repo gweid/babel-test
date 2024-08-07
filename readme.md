@@ -901,7 +901,7 @@ preset 格式和 plugin 一样，也是可以是一个对象，或者是一个�
 export default function(api, options) {
   return {
     plugins: ['pluginA'],
-    presets: [['presetsB', { options: 'bbb'}]]
+    presets: [['presetsB', { options: 'bbb' }]]
   }
 }
 ```
@@ -911,7 +911,7 @@ export default function(api, options) {
 ```js
 export default obj = {
   plugins: ['pluginA'],
-  presets: [['presetsB', { options: 'bbb'}]]
+  presets: [['presetsB', { options: 'bbb' }]]
 }
 ```
 
