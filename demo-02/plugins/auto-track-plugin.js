@@ -42,7 +42,13 @@ const autoTrackPlugin = declare((api, options, dirname) => {
       // 这部分，在函数体内，插入上报函数
       'FunctionDeclaration|ClassMethod|ArrowFunctionExpression|FunctionExpression': {
         enter(path, state) {
+          /**
+           * path.get('body') 返回的是一个 NodePath 对象。NodePath 是 Babel 提供的一个封装对象，它不仅包含了 AST 节点本身，还包含了许多用于操作和遍历 AST 的方法和属性。
+           * path.node.body 返回的是一个纯粹的 AST 节点对象。这个对象是一个普通的 JavaScript 对象，表示 AST 中的一个节点，但不包含 NodePath 提供的那些额外的方法和属性。
+           */
+          // const bodyPath = path.node.body;
           const bodyPath = path.get('body');
+
           if (bodyPath.type === 'BlockStatement') {
             bodyPath.node.body.unshift(state.trackerAST);
           } else {
