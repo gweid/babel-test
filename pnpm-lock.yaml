@@ -14,6 +14,12 @@ importers:
       '@babel/generator':
         specifier: ^7.25.0
         version: 7.25.0
+      '@babel/helper-module-imports':
+        specifier: ^7.24.7
+        version: 7.24.7
+      '@babel/helper-plugin-utils':
+        specifier: ^7.24.8
+        version: 7.24.8
       '@babel/parser':
         specifier: ^7.25.3
         version: 7.25.3
@@ -62,6 +68,10 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0
+
+  '@babel/helper-plugin-utils@7.24.8':
+    resolution: {integrity: sha512-FFWx5142D8h2Mgr/iPVGH5G7w6jDn4jUSpZTyDnQO0Yn7Ks2Kuz6Pci8H6MPCoUJegd/UZQ3tAvfLCxQSnWWwg==}
+    engines: {node: '>=6.9.0'}
 
   '@babel/helper-simple-access@7.24.7':
     resolution: {integrity: sha512-zBAIvbCMh5Ts+b86r/CjU+4XGYIs+R1j951gxI3KmmxBMhCg4oQMsv6ZXQ64XOm/cvzfU1FmoCyt6+owc5QMYg==}
@@ -290,6 +300,8 @@ snapshots:
       '@babel/traverse': 7.25.3
     transitivePeerDependencies:
       - supports-color
+
+  '@babel/helper-plugin-utils@7.24.8': {}
 
   '@babel/helper-simple-access@7.24.7':
     dependencies:
