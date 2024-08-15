@@ -1,5 +1,3 @@
-const importModule = require('@babel/helper-module-imports');
-
 let intlIndex = 0;
 const nextGI18nKey = () => {
   ++intlIndex;

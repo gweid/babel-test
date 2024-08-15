@@ -17,6 +17,8 @@
     "@babel/parser": "^7.25.3",
     "@babel/template": "^7.25.0",
     "@babel/traverse": "^7.25.3",
-    "@babel/types": "^7.25.2"
+    "@babel/types": "^7.25.2",
+    "doctrine": "^3.0.0",
+    "fs-extra": "^11.2.0"
   }
 }
